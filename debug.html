@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Cars - Debug</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #debugInfo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #ff0000;
+            background: rgba(255,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: #00ff00;
+            background: rgba(0,255,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <h1>Battle Cars - Debug Mode</h1>
+            <p id="loadingMessage">Initializing...</p>
+            <div id="debugInfo">
+                <div>Loading Three.js...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        console.log('🚀 Debug script starting...');
+        
+        const debugInfo = document.getElementById('debugInfo');
+        const loadingMessage = document.getElementById('loadingMessage');
+        
+        function log(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugInfo.appendChild(div);
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+        }
+        
+        function updateLoadingMessage(message) {
+            loadingMessage.textContent = message;
+            log(message);
+        }
+        
+        try {
+            updateLoadingMessage('Loading Three.js...');
+            
+            // Test Three.js import
+            import('https://unpkg.com/three@0.158.0/build/three.module.js').then(THREE => {
+                log('✅ Three.js loaded successfully', 'success');
+                updateLoadingMessage('Creating scene...');
+                
+                // Create a simple scene to test
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer();
+                
+                log('✅ Scene created', 'success');
+                updateLoadingMessage('Setting up renderer...');
+                
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.getElementById('gameContainer').appendChild(renderer.domElement);
+                
+                log('✅ Renderer setup complete', 'success');
+                updateLoadingMessage('Creating test cube...');
+                
+                // Create a simple cube
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                const cube = new THREE.Mesh(geometry, material);
+                scene.add(cube);
+                
+                camera.position.z = 5;
+                
+                log('✅ Test cube created', 'success');
+                updateLoadingMessage('Starting render loop...');
+                
+                // Animation loop
+                function animate() {
+                    requestAnimationFrame(animate);
+                    cube.rotation.x += 0.01;
+                    cube.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                }
+                
+                animate();
+                
+                log('✅ Animation loop started', 'success');
+                updateLoadingMessage('Game ready!');
+                
+                // Hide loading screen after 2 seconds
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    log('🎉 Loading screen hidden - Game is ready!', 'success');
+                }, 2000);
+                
+            }).catch(error => {
+                log(`❌ Three.js import failed: ${error.message}`, 'error');
+                updateLoadingMessage('Failed to load Three.js');
+            });
+            
+        } catch (error) {
+            log(`❌ Script error: ${error.message}`, 'error');
+            updateLoadingMessage('Script error occurred');
+        }
+        
+        // Test if modules are working
+        log('🔧 Testing module system...');
+        
+        // Test basic browser features
+        if (typeof WebGLRenderingContext !== 'undefined') {
+            log('✅ WebGL supported', 'success');
+        } else {
+            log('❌ WebGL not supported', 'error');
+        }
+        
+        if (typeof requestAnimationFrame !== 'undefined') {
+            log('✅ requestAnimationFrame supported', 'success');
+        } else {
+            log('❌ requestAnimationFrame not supported', 'error');
+        }
+        
+        // Test window size
+        log(`📱 Window size: ${window.innerWidth}x${window.innerHeight}`);
+        
+    </script>
+</body>
+</html> 
