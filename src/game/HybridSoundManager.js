@@ -17,6 +17,7 @@ export class HybridSoundManager {
         this.useGameSoundPack = true; // Use the new game sound pack
         this.lastSpeed = 0; // Track last speed for dynamic engine sounds
         this.currentEngineBand = null; // Track current engine band to avoid re-triggering every frame
+        this.preferFileAnthem = false; // Disable external anthem files in prod to avoid 404s
         
         this.initializeSounds();
         this.setupGlobalVolume();
@@ -516,14 +517,19 @@ export class HybridSoundManager {
     }
     playAnthemLoop() {
         if (!this.soundEnabled) return;
+        // By default, avoid fetching external files in production; use synth anthem
+        if (!this.preferFileAnthem) {
+            this._startSynthAnthem();
+            return;
+        }
         try {
             if (!this.sounds.ambient.anthem) {
-                // Prefer smaller AAC (m4a), fall back to mp3/webm, then synth
+                // Files should be placed in /public/sounds if enabled
                 this.sounds.ambient.anthem = new Howl({
                     src: [
-                        '/src/audio/anthem_rock_loop.m4a',
-                        '/src/audio/anthem_rock_loop.mp3',
-                        '/src/audio/anthem_rock_loop.webm'
+                        '/sounds/anthem_rock_loop.m4a',
+                        '/sounds/anthem_rock_loop.mp3',
+                        '/sounds/anthem_rock_loop.webm'
                     ],
                     loop: true,
                     volume: 0.45,
