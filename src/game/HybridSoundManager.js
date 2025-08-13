@@ -17,7 +17,7 @@ export class HybridSoundManager {
         this.useGameSoundPack = true; // Use the new game sound pack
         this.lastSpeed = 0; // Track last speed for dynamic engine sounds
         this.currentEngineBand = null; // Track current engine band to avoid re-triggering every frame
-        this.preferFileAnthem = false; // Disable external anthem files in prod to avoid 404s
+        this.preferFileAnthem = true; // Enable file-based anthem when available in /public/sounds
         
         this.initializeSounds();
         this.setupGlobalVolume();
