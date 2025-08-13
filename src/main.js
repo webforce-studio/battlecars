@@ -72,6 +72,8 @@ class BattleCarsGame {
         this.setupCamera();
         this.setupRenderer();
         this.setupLights();
+        // Safety: ensure loading screen never gets stuck (hide after a short delay)
+        setTimeout(() => this._hideInitialLoading(), 2500);
         
         // Initialize game components
         this.arena = new Arena(this.scene);
@@ -1959,15 +1961,20 @@ class BattleCarsGame {
 
         // Hide loading screen after the very first successful render
         if (!this._loadingHidden) {
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            this._loadingHidden = true;
+            this._hideInitialLoading();
         }
 
         // Render rear-view mirror when the player car exists
         if (this.car) {
             this.renderMirror();
         }
+    }
+
+    _hideInitialLoading() {
+        if (this._loadingHidden) return;
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        this._loadingHidden = true;
     }
 
     // ======= Rear-view mirror helpers =======

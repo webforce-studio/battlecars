@@ -89,8 +89,12 @@ if (stripe) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../dist')));
+// Serve static files and send index.html for SPA routes
+const distDir = path.join(__dirname, '../dist');
+app.use(express.static(distDir));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+});
 
 // Basic routes
 app.get('/api/health', (req, res) => {
