@@ -4,6 +4,10 @@ export class GameUI {
         this.healthFill = document.getElementById('healthFill');
         this.playerCount = document.getElementById('playerCount');
         this.speedValue = document.getElementById('speedValue');
+        this._boostHudEl = null;
+        this._boostHudMax = 0;
+        this._shieldBannerEl = null;
+        this._shieldTimer = null;
         
         this.initializeUI();
     }
@@ -614,6 +618,204 @@ export class GameUI {
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
         }
+    }
+
+    // ===== Entry overlays =====
+    showNicknameEntry(onDone) {
+        // Create simple centered modal
+        const overlay = document.createElement('div');
+        overlay.id = 'nicknameOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.background = 'rgba(0,0,0,0.55)';
+        overlay.style.zIndex = '3000';
+
+        const panel = document.createElement('div');
+        panel.style.background = 'rgba(20,22,28,0.95)';
+        panel.style.border = '1px solid rgba(255,255,255,0.15)';
+        panel.style.borderRadius = '12px';
+        panel.style.padding = '24px 28px';
+        panel.style.minWidth = '320px';
+        panel.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.color = 'white';
+        panel.innerHTML = `
+          <div style="font-size:22px; font-weight:700; margin-bottom:12px;">Enter nickname</div>
+          <input id="nicknameInput" type="text" maxlength="16" placeholder="Your name" 
+            style="width:100%; padding:12px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; outline:none; font-size:16px;">
+          <button id="nicknameBtn" style="margin-top:14px; width:100%; padding:10px 14px; border:none; border-radius:8px; background:#2b6cff; color:white; font-weight:700; cursor:pointer;">Continue</button>
+        `;
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+        const input = panel.querySelector('#nicknameInput');
+        const btn = panel.querySelector('#nicknameBtn');
+        if (input) input.focus();
+
+        const finish = () => {
+            const raw = (input?.value || '').trim();
+            const name = raw || `Player_${Math.random().toString(36).slice(2,6)}`;
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            if (typeof onDone === 'function') onDone(name);
+        };
+        btn?.addEventListener('click', finish);
+        input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(); });
+    }
+
+    // ===== Boost HUD =====
+    _ensureBoostHud() {
+        if (this._boostHudEl && document.body.contains(this._boostHudEl)) return this._boostHudEl;
+        const wrap = document.createElement('div');
+        wrap.id = 'boostHud';
+        wrap.style.position = 'fixed';
+        wrap.style.left = '50%';
+        wrap.style.bottom = '24px';
+        wrap.style.transform = 'translateX(-50%)';
+        wrap.style.display = 'flex';
+        wrap.style.gap = '8px';
+        wrap.style.zIndex = '1400';
+        wrap.style.pointerEvents = 'none';
+        document.body.appendChild(wrap);
+        this._boostHudEl = wrap;
+        return wrap;
+    }
+
+    updateBoostHud(current, max) {
+        const el = this._ensureBoostHud();
+        current = Math.max(0, Math.floor(current || 0));
+        max = Math.max(1, Math.floor(max || 1));
+        if (this._boostHudMax !== max) {
+            // rebuild segments
+            el.innerHTML = '';
+            for (let i = 0; i < max; i++) {
+                const seg = document.createElement('div');
+                seg.className = 'boost-seg';
+                seg.style.width = '18px';
+                seg.style.height = '10px';
+                seg.style.borderRadius = '3px';
+                seg.style.border = '1px solid rgba(255,255,255,0.35)';
+                seg.style.background = 'rgba(255,255,255,0.10)';
+                seg.style.boxShadow = '0 0 8px rgba(0,0,0,0.35) inset';
+                el.appendChild(seg);
+            }
+            this._boostHudMax = max;
+        }
+        // update fill
+        const children = Array.from(el.children);
+        for (let i = 0; i < children.length; i++) {
+            const filled = i < current;
+            const c = children[i];
+            c.style.background = filled ? 'linear-gradient(180deg, #37ffb1, #12c2e9)' : 'rgba(255,255,255,0.10)';
+            c.style.opacity = filled ? '1' : '0.45';
+            c.style.borderColor = filled ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)';
+        }
+    }
+
+    // ===== Shield banner =====
+    showShieldActive(endsAtMs) {
+        if (this._shieldTimer) { try { clearInterval(this._shieldTimer); } catch(_){} this._shieldTimer = null; }
+        if (!this._shieldBannerEl || !document.body.contains(this._shieldBannerEl)) {
+            const el = document.createElement('div');
+            el.id = 'shieldBanner';
+            el.style.position = 'fixed';
+            el.style.top = '24px';
+            el.style.left = '50%';
+            el.style.transform = 'translateX(-50%)';
+            el.style.padding = '8px 14px';
+            el.style.borderRadius = '999px';
+            el.style.background = 'rgba(0, 200, 255, 0.18)';
+            el.style.border = '1px solid rgba(0, 200, 255, 0.65)';
+            el.style.color = 'white';
+            el.style.fontFamily = 'Arial, sans-serif';
+            el.style.fontWeight = '700';
+            el.style.letterSpacing = '0.5px';
+            el.style.textShadow = '0 1px 2px rgba(0,0,0,0.4)';
+            el.style.zIndex = '1600';
+            el.textContent = 'SHIELD ACTIVATED';
+            document.body.appendChild(el);
+            this._shieldBannerEl = el;
+        }
+        const update = () => {
+            const now = Date.now();
+            const ms = Math.max(0, (endsAtMs || now) - now);
+            const s = Math.ceil(ms / 1000);
+            if (this._shieldBannerEl) this._shieldBannerEl.textContent = `SHIELD ACTIVATED · ${String(s).padStart(2, '0')}s`;
+            if (ms <= 0) this.hideShieldActive();
+        };
+        update();
+        this._shieldTimer = setInterval(update, 200);
+    }
+
+    hideShieldActive() {
+        if (this._shieldTimer) { try { clearInterval(this._shieldTimer); } catch(_){} this._shieldTimer = null; }
+        if (this._shieldBannerEl && this._shieldBannerEl.parentNode) {
+            this._shieldBannerEl.parentNode.removeChild(this._shieldBannerEl);
+        }
+        this._shieldBannerEl = null;
+    }
+
+    showVehicleSelect(vehicles, onSelect) {
+        const overlay = document.createElement('div');
+        overlay.id = 'vehicleOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.background = 'rgba(0,0,0,0.55)';
+        overlay.style.zIndex = '3000';
+
+        const panel = document.createElement('div');
+        panel.style.background = 'rgba(20,22,28,0.95)';
+        panel.style.border = '1px solid rgba(255,255,255,0.15)';
+        panel.style.borderRadius = '12px';
+        panel.style.padding = '22px';
+        panel.style.minWidth = '640px';
+        panel.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.color = 'white';
+
+        const header = document.createElement('div');
+        header.textContent = 'Select your car';
+        header.style.fontSize = '22px';
+        header.style.fontWeight = '700';
+        header.style.marginBottom = '14px';
+        panel.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        grid.style.gap = '12px';
+
+        const opts = ['sport','balanced','tank'];
+        opts.forEach((id) => {
+            const v = vehicles?.[id];
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.style.background = 'rgba(255,255,255,0.06)';
+            card.style.border = '1px solid rgba(255,255,255,0.15)';
+            card.style.borderRadius = '10px';
+            card.style.padding = '14px';
+            card.style.textAlign = 'left';
+            card.style.cursor = 'pointer';
+            card.style.color = 'white';
+            card.innerHTML = `
+              <div style="font-weight:700; margin-bottom:6px;">${v?.name || id}</div>
+              <div style="font-size:12px; opacity:.85; margin-bottom:8px;">${v?.description || ''}</div>
+              <div style="font-size:12px; opacity:.8;">HP: ${v?.maxHealth ?? 100} · MaxSpeed: ${v?.maxSpeed ?? 45}</div>
+            `;
+            card.addEventListener('click', () => {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                if (typeof onSelect === 'function') onSelect(id);
+            });
+            grid.appendChild(card);
+        });
+        panel.appendChild(grid);
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
     }
     
     showDebugInfo(info) {

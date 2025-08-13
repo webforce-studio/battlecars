@@ -13,35 +13,35 @@ export class GameSoundPack {
         this.sampleMap = {
             // Place files in /public/sounds (Vite serves them from /sounds/...)
             engine: {
-                idle: '/sounds/engine_idle.mp3',
-                low: '/sounds/engine_low.mp3',
-                medium: '/sounds/engine_medium.mp3',
-                high: '/sounds/engine_high.mp3'
+                idle: '/sounds/engine_idle.wav',
+                low: '/sounds/engine_low.wav',
+                medium: '/sounds/engine_medium.wav',
+                high: '/sounds/engine_high.wav'
             },
             collision: {
-                front: '/sounds/collision_front.mp3',
-                side: '/sounds/collision_side.mp3',
-                rear: '/sounds/collision_rear.mp3',
-                headshot: '/sounds/collision_headshot.mp3',
-                wall: '/sounds/collision_wall.mp3'
+                front: '/sounds/collision_front.wav',
+                side: '/sounds/collision_side.wav',
+                rear: '/sounds/collision_rear.wav',
+                headshot: '/sounds/collision_headshot.wav',
+                wall: '/sounds/collision_wall.wav'
             },
             boost: {
-                whoosh: '/sounds/boost_whoosh.mp3'
+                whoosh: '/sounds/boost_whoosh.wav'
             },
             ui: {
-                button: '/sounds/ui_button.mp3',
-                damage: '/sounds/ui_damage.mp3',
-                respawn: '/sounds/ui_respawn.mp3',
-                victory: '/sounds/ui_victory.mp3',
-                countdown: '/sounds/ui_countdown.mp3'
+                button: '/sounds/ui_button.wav',
+                damage: '/sounds/ui_damage.wav',
+                respawn: '/sounds/ui_respawn.wav',
+                victory: '/sounds/ui_victory.wav',
+                countdown: '/sounds/ui_countdown.wav'
             },
             ambient: {
-                crowd: '/sounds/ambient_crowd.mp3',
-                wind: '/sounds/ambient_wind.mp3'
+                crowd: '/sounds/ambient_crowd.wav',
+                wind: '/sounds/ambient_wind.wav'
             },
             movement: {
-                tireScreech: '/sounds/tire_screech.mp3',
-                drift: '/sounds/drift.mp3'
+                tireScreech: '/sounds/tire_screech.wav',
+                drift: '/sounds/drift.wav'
             }
         };
 

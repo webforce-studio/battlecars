@@ -7,7 +7,8 @@ coverage/
 *.tgz
 *.zip
 tmp/
-public/sounds/
+# Keep public sounds in repo for deployment
+!public/sounds/
 # Keep anthem compressed files; ignore other large audio
 src/audio/*.wav
 src/audio/*.aiff
