@@ -410,7 +410,8 @@ function dropPowerup(roomId) {
     const roomState = getRoomGameState(roomId);
     const playerCount = roomState.activePlayers.size;
     
-    if (playerCount < 2) return; // No powerups for single player
+    // Allow drops even for solo play (reduced frequency handled in interval logic)
+    if (playerCount < 1) return;
     
     // Determine powerup type (70% health, 30% shield)
     const powerupTypes = ['health', 'health', 'health', 'shield'];
@@ -445,10 +446,10 @@ function dropPowerup(roomId) {
 
 // Calculate powerup drop frequency based on player count
 function getPowerupDropInterval(playerCount) {
-    // Base interval: 30 seconds
-    // More players = more frequent drops
-    // 2 players: 30s, 4 players: 20s, 6+ players: 15s
-    const baseInterval = 30000; // 30 seconds
+    // Base interval: 30 seconds for 2 players
+    // Solo mode: slower but still drops (45s)
+    // 4 players: ~20s, 6+ players: ~15s
+    const baseInterval = (playerCount <= 1) ? 45000 : 30000;
     const reductionPerPlayer = 2500; // 2.5 seconds less per additional player
     const minInterval = 15000; // Minimum 15 seconds
     
@@ -462,7 +463,8 @@ function managePowerupDrops(roomId) {
     const now = Date.now();
     const playerCount = roomState.activePlayers.size;
     
-    if (roomState.phase !== 'playing' || playerCount < 2) return;
+    // Drop powerups during active play, including solo sessions
+    if (roomState.phase !== 'playing' || playerCount < 1) return;
     
     // Check if it's time to drop a new powerup
     const dropInterval = getPowerupDropInterval(playerCount);
