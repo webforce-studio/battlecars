@@ -41,14 +41,16 @@ app.use(helmet({
     }
 }));
 
-// Rate limiting (API only; do NOT rate-limit static assets)
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // v7 option name
-    standardHeaders: true,
-    legacyHeaders: false
-});
-app.use('/api', limiter);
+// Rate limiting (API only; disabled in production to avoid accidental 429s on proxies)
+if (process.env.NODE_ENV !== 'production') {
+    const limiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        limit: 100, // v7 option name
+        standardHeaders: true,
+        legacyHeaders: false
+    });
+    app.use('/api', limiter);
+}
 
 // CORS
 app.use(cors({
