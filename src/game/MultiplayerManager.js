@@ -28,7 +28,8 @@ export class MultiplayerManager {
 
     connect(initialNickname = null) {
         this.initialNickname = initialNickname;
-        this.socket = io('http://localhost:3001');
+        // Use same-origin Socket.io endpoint so it works in prod and in Vite dev (proxied)
+        this.socket = io();
         
         this.socket.on('connect', () => {
             console.log('Connected to server');
