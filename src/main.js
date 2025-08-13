@@ -172,77 +172,33 @@ class BattleCarsGame {
             return null;
         });
         
-        // Show nickname entry, then vehicle selection, then continue boot
-        this.gameUI.showNicknameEntry((nickname) => {
-            // Store the nickname
-            this.playerNickname = nickname;
-            console.log(`🎯 Player set nickname to: ${nickname}`);
-            
-            // Connect now with nickname so the server's join message uses it
-            if (this.multiplayer && !this.multiplayer.isConnected) {
-                this.multiplayer.connect(nickname);
-            } else if (this.multiplayer && this.multiplayer.isConnected) {
-                this.multiplayer.sendNickname(nickname);
-            } else {
-                this._pendingNickname = nickname;
-            }
-            
-            // Now show vehicle selection
-            this.gameUI.showVehicleSelect(VEHICLES, (vehicleId) => {
-            this.selectedVehicleId = vehicleId;
-            const preset = getVehicleById(vehicleId);
-            this.car = new Car(this.scene, preset);
-            // inform server of our choice
-            if (this.multiplayer && this.multiplayer.isConnected) {
-                this.multiplayer.sendVehicleSelection(vehicleId);
-                // Also send nickname if we have one
-                if (this._pendingNickname) {
-                    this.multiplayer.sendNickname(this._pendingNickname);
-                    this._pendingNickname = null;
-                }
-            } else {
-                // if not yet connected, send after connect
-                const wait = setInterval(() => {
-                    if (this.multiplayer && this.multiplayer.isConnected) {
-                        this.multiplayer.sendVehicleSelection(vehicleId);
-                        // Also send nickname if we have one
-                        if (this._pendingNickname) {
-                            this.multiplayer.sendNickname(this._pendingNickname);
-                            this._pendingNickname = null;
-                        }
-                        clearInterval(wait);
-                    }
-                }, 250);
-            }
-            // Stop selector camera and position camera to follow car
-            this.isInSelector = false;
-            this.camera.position.set(0, 15, 20);
-            this.camera.lookAt(0, 0, 0);
-            // Start game loop once car exists
-            this.isRunning = true; // already running, ensure flag stays true
-            if (this.soundManager) {
-                this.soundManager.startEngine();
-                this.soundManager.startAmbientSounds();
-                // Keep anthem running; fade will be triggered by parachute sequence timing
-            }
-            // Ensure HUD shows 100% relative to selected vehicle
-            this.gameUI.updateHealth(this.car.health, this.car.maxHealth);
-            // Show rear-view mirror now that we are in the arena
-            this.setMirrorVisible(true);
-
-            // Apply any pending spawn received before car was created
-            if (this._pendingSpawn) {
-                // First-time entry: perform an 8s parachute drop from higher up with countdown
-                if (!this._hasEntered) {
-                    this.startParachuteLanding(this._pendingSpawn.position, this._pendingSpawn.health, { duration: 8.0, startHeight: 110, countdownSeconds: 8 });
-                    this._hasEntered = true;
+        // Show nickname/vehicle selection if UI supports it; otherwise auto-continue (prod-safe fallback)
+        if (this.gameUI && typeof this.gameUI.showNicknameEntry === 'function' && typeof this.gameUI.showVehicleSelect === 'function') {
+            this.gameUI.showNicknameEntry((nickname) => {
+                this.playerNickname = nickname;
+                if (this.multiplayer && !this.multiplayer.isConnected) {
+                    this.multiplayer.connect(nickname);
+                } else if (this.multiplayer && this.multiplayer.isConnected) {
+                    this.multiplayer.sendNickname(nickname);
                 } else {
-                    this._applyLocalSpawn(this._pendingSpawn.position, this._pendingSpawn.health);
+                    this._pendingNickname = nickname;
                 }
-                this._pendingSpawn = null;
+                this.gameUI.showVehicleSelect(VEHICLES, (vehicleId) => {
+                    this.selectedVehicleId = vehicleId;
+                    const preset = getVehicleById(vehicleId);
+                    this._createLocalCarAndStart(preset, vehicleId);
+                });
+            });
+        } else {
+            // Fallback path: connect immediately with a default nickname and vehicle
+            this.playerNickname = `Player_${Math.random().toString(36).slice(2, 6)}`;
+            if (this.multiplayer && !this.multiplayer.isConnected) {
+                this.multiplayer.connect(this.playerNickname);
             }
-        });
-        }); // Close nickname callback
+            const preset = getVehicleById('balanced');
+            this.selectedVehicleId = 'balanced';
+            this._createLocalCarAndStart(preset, 'balanced');
+        }
 
         // Setup multiplayer event handlers
         this.setupMultiplayerHandlers();
@@ -291,6 +247,36 @@ class BattleCarsGame {
         
         // Defer hiding loading screen until the first rendered frame
         this._loadingHidden = false;
+    }
+
+    _createLocalCarAndStart(preset, vehicleId) {
+        this.car = new Car(this.scene, preset);
+        if (this.multiplayer && this.multiplayer.isConnected) {
+            this.multiplayer.sendVehicleSelection(vehicleId);
+            if (this._pendingNickname) {
+                this.multiplayer.sendNickname(this._pendingNickname);
+                this._pendingNickname = null;
+            }
+        }
+        this.isInSelector = false;
+        this.camera.position.set(0, 15, 20);
+        this.camera.lookAt(0, 0, 0);
+        this.isRunning = true;
+        if (this.soundManager) {
+            this.soundManager.startEngine();
+            this.soundManager.startAmbientSounds();
+        }
+        this.gameUI.updateHealth(this.car.health, this.car.maxHealth);
+        this.setMirrorVisible(true);
+        if (this._pendingSpawn) {
+            if (!this._hasEntered) {
+                this.startParachuteLanding(this._pendingSpawn.position, this._pendingSpawn.health, { duration: 8.0, startHeight: 110, countdownSeconds: 8 });
+                this._hasEntered = true;
+            } else {
+                this._applyLocalSpawn(this._pendingSpawn.position, this._pendingSpawn.health);
+            }
+            this._pendingSpawn = null;
+        }
     }
 
     // Minimal helper: start a checkout session (for later hook-up to shop UI)
