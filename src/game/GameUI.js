@@ -802,10 +802,16 @@ export class GameUI {
             card.style.textAlign = 'left';
             card.style.cursor = 'pointer';
             card.style.color = 'white';
+            const imgUrl = `/images/vehicles/${id}.png`;
             card.innerHTML = `
-              <div style="font-weight:700; margin-bottom:6px;">${v?.name || id}</div>
-              <div style="font-size:12px; opacity:.85; margin-bottom:8px;">${v?.description || ''}</div>
-              <div style="font-size:12px; opacity:.8;">HP: ${v?.maxHealth ?? 100} · MaxSpeed: ${v?.maxSpeed ?? 45}</div>
+              <div style="display:flex; gap:12px; align-items:center;">
+                <img src="${imgUrl}" alt="${v?.name || id}" style="width:84px; height:56px; object-fit:contain; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12);" onerror="this.style.display='none'"/>
+                <div>
+                  <div style="font-weight:700; margin-bottom:6px;">${v?.name || id}</div>
+                  <div style="font-size:12px; opacity:.85; margin-bottom:8px;">${v?.description || ''}</div>
+                  <div style="font-size:12px; opacity:.8;">HP: ${v?.maxHealth ?? 100} · MaxSpeed: ${v?.maxSpeed ?? 45}</div>
+                </div>
+              </div>
             `;
             card.addEventListener('click', () => {
                 if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
@@ -838,5 +844,136 @@ export class GameUI {
         }
         
         debugElement.innerHTML = info;
+    }
+
+    // ===== Round scoreboard (TAB) =====
+    showScoreboard(leaderboard = []) {
+        let el = document.getElementById('scoreboardOverlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'scoreboardOverlay';
+            el.style.position = 'fixed';
+            el.style.inset = '0';
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.zIndex = '2500';
+            el.style.background = 'rgba(0,0,0,0.35)';
+            document.body.appendChild(el);
+        }
+        el.style.display = 'flex';
+        const panel = document.createElement('div');
+        panel.style.background = 'rgba(12,14,18,0.92)';
+        panel.style.border = '1px solid rgba(255,255,255,0.18)';
+        panel.style.borderRadius = '12px';
+        panel.style.padding = '16px 18px';
+        panel.style.minWidth = '520px';
+        panel.style.color = 'white';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.boxShadow = '0 10px 28px rgba(0,0,0,0.55)';
+        const rows = leaderboard.map((p, i) => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.12)">
+              <td style="padding:6px 10px; opacity:.85;">${i+1}</td>
+              <td style="padding:6px 10px">${p.playerName || p.name || 'Player'}</td>
+              <td style="padding:6px 10px; text-align:center">${p.kills ?? 0}</td>
+              <td style="padding:6px 10px; text-align:center">${p.deaths ?? 0}</td>
+              <td style="padding:6px 10px; text-align:center">${p.damageDealt ?? 0}</td>
+            </tr>`).join('');
+        panel.innerHTML = `
+          <div style="font-weight:700; font-size:18px; margin-bottom:8px;">Scoreboard</div>
+          <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            <thead>
+              <tr style="border-bottom:2px solid rgba(255,255,255,0.25)">
+                <th style="text-align:left; padding:6px 10px; width:56px;">#</th>
+                <th style="text-align:left; padding:6px 10px;">Player</th>
+                <th style="text-align:center; padding:6px 10px; width:72px;">Kills</th>
+                <th style="text-align:center; padding:6px 10px; width:80px;">Deaths</th>
+                <th style="text-align:center; padding:6px 10px; width:96px;">Damage</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+        el.innerHTML = '';
+        el.appendChild(panel);
+    }
+
+    hideScoreboard() {
+        const el = document.getElementById('scoreboardOverlay');
+        if (el) el.style.display = 'none';
+    }
+
+    // ===== Intermission countdown =====
+    showNextRoundCountdown(endTimeMs) {
+        if (!endTimeMs) return;
+        let el = document.getElementById('nextRoundCountdown');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'nextRoundCountdown';
+            el.style.position = 'fixed';
+            el.style.top = '20px';
+            el.style.right = '20px';
+            el.style.padding = '8px 12px';
+            el.style.borderRadius = '10px';
+            el.style.background = 'rgba(0,0,0,0.55)';
+            el.style.border = '1px solid rgba(255,255,255,0.25)';
+            el.style.color = 'white';
+            el.style.zIndex = '2200';
+            el.style.fontFamily = 'Arial, sans-serif';
+            document.body.appendChild(el);
+        }
+        const update = () => {
+            const now = Date.now();
+            const ms = Math.max(0, endTimeMs - now);
+            const s = Math.ceil(ms / 1000);
+            el.textContent = `Next round in ${s}s`;
+            if (ms <= 0) { clearInterval(timer); if (el && el.parentNode) el.parentNode.removeChild(el); }
+        };
+        update();
+        const timer = setInterval(update, 250);
+    }
+
+    // ===== Simple K/D/DMG HUD =====
+    updateScoreStats(stats) {
+        let el = document.getElementById('statsHud');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'statsHud';
+            el.style.position = 'fixed';
+            el.style.top = '20px';
+            el.style.left = '50%';
+            el.style.transform = 'translateX(-50%)';
+            el.style.padding = '6px 10px';
+            el.style.borderRadius = '10px';
+            el.style.background = 'rgba(0,0,0,0.45)';
+            el.style.border = '1px solid rgba(255,255,255,0.25)';
+            el.style.color = 'white';
+            el.style.fontFamily = 'Arial, sans-serif';
+            el.style.fontSize = '13px';
+            el.style.zIndex = '1400';
+            document.body.appendChild(el);
+        }
+        const k = stats?.kills ?? 0;
+        const d = stats?.deaths ?? 0;
+        const dmg = stats?.damageDealt ?? 0;
+        el.textContent = `Kills: ${k}   Deaths: ${d}   Damage: ${dmg}`;
+    }
+
+    // ===== Powerup toast =====
+    showPowerupCollected(type) {
+        const el = document.createElement('div');
+        el.style.position = 'fixed';
+        el.style.left = '50%';
+        el.style.bottom = '80px';
+        el.style.transform = 'translateX(-50%)';
+        el.style.padding = '8px 12px';
+        el.style.borderRadius = '12px';
+        el.style.background = 'rgba(0,0,0,0.55)';
+        el.style.border = '1px solid rgba(255,255,255,0.25)';
+        el.style.color = 'white';
+        el.style.fontFamily = 'Arial, sans-serif';
+        el.style.zIndex = '1800';
+        el.textContent = `Collected ${type === 'shield' ? 'Shield' : 'Health'}!`;
+        document.body.appendChild(el);
+        setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1300);
     }
 } 
