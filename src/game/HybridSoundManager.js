@@ -518,8 +518,13 @@ export class HybridSoundManager {
         if (!this.soundEnabled) return;
         try {
             if (!this.sounds.ambient.anthem) {
+                // Prefer smaller AAC (m4a), fall back to mp3/webm, then synth
                 this.sounds.ambient.anthem = new Howl({
-                    src: ['/src/audio/anthem_rock_loop.mp3'],
+                    src: [
+                        '/src/audio/anthem_rock_loop.m4a',
+                        '/src/audio/anthem_rock_loop.mp3',
+                        '/src/audio/anthem_rock_loop.webm'
+                    ],
                     loop: true,
                     volume: 0.45,
                     preload: true,

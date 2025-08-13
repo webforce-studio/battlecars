@@ -8,7 +8,9 @@ coverage/
 *.zip
 tmp/
 public/sounds/
-src/audio/
+# Keep anthem compressed files; ignore other large audio
+src/audio/*.wav
+src/audio/*.aiff
 # Dependencies
 node_modules/
 npm-debug.log*
